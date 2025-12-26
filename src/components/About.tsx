@@ -1,7 +1,14 @@
-import { Code2, Palette, Zap, Users } from "lucide-react";
+import { Code2, Palette, Zap, Users, Download } from "lucide-react";
 
-const About = () => {
-  const highlights = [
+interface AboutProps {
+  bio?: React.ReactNode;
+  techStack?: string[];
+  highlights?: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }[];
+  resumeUrl?: string;
+}
+
+const About = ({ bio, techStack, highlights, resumeUrl = "/resume.pdf" }: AboutProps) => {
+  const defaultHighlights = [
     {
       icon: Code2,
       title: "Clean Code",
@@ -24,6 +31,8 @@ const About = () => {
     },
   ];
 
+  const displayHighlights = highlights || defaultHighlights;
+
   return (
     <section id="about" className="py-24 px-4">
       <div className="max-w-6xl mx-auto">
@@ -38,32 +47,48 @@ const About = () => {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Left side - Text */}
           <div className="space-y-6">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              I'm a passionate web developer with <span className="text-primary font-semibold">1+ year of experience</span> building modern web applications. I love turning ideas into reality through code.
-            </p>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              My journey in web development has led me to work on diverse projects, from social media clones to e-commerce platforms. I specialize in creating responsive, user-friendly interfaces using the latest technologies.
-            </p>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              When I'm not coding, I'm exploring new technologies and contributing to open-source projects. I believe in continuous learning and staying updated with industry trends.
-            </p>
+            {bio || (
+              <>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  I'm a passionate web developer with <span className="text-primary font-semibold">1+ year of experience</span> building modern web applications. I love turning ideas into reality through code.
+                </p>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  My journey in web development has led me to work on diverse projects, from social media clones to e-commerce platforms. I specialize in creating responsive, user-friendly interfaces using the latest technologies.
+                </p>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  When I'm not coding, I'm exploring new technologies and contributing to open-source projects. I believe in continuous learning and staying updated with industry trends.
+                </p>
+              </>
+            )}
 
             {/* Tech stack */}
             <div className="pt-6">
               <h3 className="text-sm font-mono text-primary mb-4">{"// Tech Stack"}</h3>
               <div className="flex flex-wrap gap-3">
-                {["React", "JavaScript", "TypeScript", "HTML5", "CSS3", "Tailwind", "Node.js", "Git"].map((tech) => (
+                {(techStack || ["React", "JavaScript", "TypeScript", "HTML5", "CSS3", "Tailwind", "Node.js", "Git"]).map((tech) => (
                   <span key={tech} className="skill-tag">
                     {tech}
                   </span>
                 ))}
               </div>
             </div>
+
+            {/* Download CV Button */}
+            <div className="pt-4">
+              <a 
+                href={resumeUrl}
+                download 
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download CV
+              </a>
+            </div>
           </div>
 
           {/* Right side - Cards */}
           <div className="grid grid-cols-2 gap-4">
-            {highlights.map((item, index) => (
+            {displayHighlights.map((item, index) => (
               <div
                 key={item.title}
                 className="card-glass group cursor-default"

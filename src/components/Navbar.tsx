@@ -19,22 +19,25 @@ const Navbar = () => {
   const navLinks = [
     { label: "About", href: "#about" },
     { label: "Skills", href: "#skills" },
+    { label: "Services", href: "#services" },
+    { label: "Blog", href: "#blog" },
     { label: "Projects", href: "#projects" },
+    { label: "Team", href: "#team" },
     { label: "Testimonials", href: "#testimonials" },
     { label: "Contact", href: "#contact" },
   ];
 
   const scrollToSection = (href: string) => {
     setIsOpen(false);
-    if (location.pathname !== "/") {
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    } else if (location.pathname !== "/") {
       navigate("/");
       setTimeout(() => {
         const element = document.querySelector(href);
         element?.scrollIntoView({ behavior: "smooth" });
       }, 100);
-    } else {
-      const element = document.querySelector(href);
-      element?.scrollIntoView({ behavior: "smooth" });
     }
   };
 

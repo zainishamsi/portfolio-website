@@ -6,11 +6,15 @@ interface Skill {
   color: string;
 }
 
-const Skills = () => {
+interface SkillsProps {
+  customSkills?: Skill[];
+}
+
+const Skills = ({ customSkills }: SkillsProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const skills: Skill[] = [
+  const defaultSkills: Skill[] = [
     { name: "React", level: 90, color: "from-cyan-400 to-blue-500" },
     { name: "JavaScript", level: 85, color: "from-yellow-400 to-orange-500" },
     { name: "TypeScript", level: 80, color: "from-blue-400 to-blue-600" },
@@ -20,6 +24,8 @@ const Skills = () => {
     { name: "Git & GitHub", level: 85, color: "from-gray-400 to-gray-600" },
     { name: "Responsive Design", level: 90, color: "from-pink-400 to-purple-500" },
   ];
+
+  const skills = customSkills || defaultSkills;
 
   useEffect(() => {
     const observer = new IntersectionObserver(

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Upload, X, Lock, LogOut, Loader2, AlertCircle, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Edit, Trash2, Upload, X, Lock, LogOut, Loader2, AlertCircle, ChevronLeft, ChevronRight, Search, FileText } from "lucide-react";
 
 interface Project {
   _id: string;
@@ -13,6 +13,7 @@ interface Project {
 
 const AdminDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,12 +33,32 @@ const AdminDashboard = () => {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const fetchProjects = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/projects`);
+      const data = await res.json();
+      setProjects(data);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [API_URL]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+      fetchProjects();
+    } else if (isAuthenticated) {
       fetchProjects();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchProjects]);
 
   useEffect(() => {
     const totalPages = Math.ceil(projects.length / itemsPerPage);
@@ -50,31 +71,22 @@ const AdminDashboard = () => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  const fetchProjects = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("http://localhost:5000/api/projects");
-      const data = await res.json();
-      setProjects(data);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple hardcoded password for demonstration
-    if (password === "admin123") {
+    // Simple password check as requested
+    if (password === "admin51214@") {
+      localStorage.setItem("token", "admin-access-token");
       setIsAuthenticated(true);
+      setErrors({});
     } else {
-      alert("Invalid password");
+      alert("Invalid credentials");
     }
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     setIsAuthenticated(false);
+    setEmail("");
     setPassword("");
   };
 
@@ -122,15 +134,17 @@ const AdminDashboard = () => {
       data.append("image", imageFile);
     }
 
+    const token = localStorage.getItem("token");
     try {
       const url = isEditing 
-        ? `http://localhost:5000/api/projects/${isEditing}`
-        : "http://localhost:5000/api/projects";
+        ? `${API_URL}/api/projects/${isEditing}`
+        : `${API_URL}/api/projects`;
       
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
+        headers: { "Authorization": `Bearer ${token}` },
         body: data,
       });
 
@@ -144,10 +158,12 @@ const AdminDashboard = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const token = localStorage.getItem("token");
     if (confirm("Are you sure you want to delete this project?")) {
       try {
-        await fetch(`http://localhost:5000/api/projects/${id}`, {
+        await fetch(`${API_URL}/api/projects/${id}`, {
           method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` },
         });
         fetchProjects();
       } catch (error) {
@@ -183,6 +199,29 @@ const AdminDashboard = () => {
     setErrors({});
   };
 
+  const handleResumeUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resumeFile) return;
+    const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("resume", resumeFile);
+
+    try {
+      const res = await fetch(`${API_URL}/api/upload-resume`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        alert("Resume uploaded successfully");
+        setResumeFile(null);
+      }
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+    }
+  };
+
   const filteredProjects = projects.filter(project => 
     project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -206,6 +245,13 @@ const AdminDashboard = () => {
           </div>
           <h2 className="text-2xl font-bold mb-6">Admin Access</h2>
           <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Enter Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
             <input
               type="password"
               placeholder="Enter Password"
@@ -242,6 +288,37 @@ const AdminDashboard = () => {
             <LogOut className="w-5 h-5" /> Logout
           </button>
         </div>
+      </div>
+
+      {/* Resume Upload Section */}
+      <div className="card-glass p-6 mb-8 animate-fade-in">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          Update Resume
+        </h2>
+        <form onSubmit={handleResumeUpload} className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-medium mb-2 text-muted-foreground">
+              Upload PDF Resume
+            </label>
+            <div className="border border-border rounded-lg p-2 bg-secondary/30">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                className="w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+              />
+            </div>
+          </div>
+          <button 
+            type="submit" 
+            disabled={!resumeFile}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Resume
+          </button>
+        </form>
       </div>
 
       {showForm && (
@@ -345,7 +422,7 @@ const AdminDashboard = () => {
               <div key={project._id} className="card-glass p-4 group animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-secondary">
                   {project.imageUrl && (
-                    <img src={`http://localhost:5000${project.imageUrl}`} alt={project.title} className="w-full h-full object-cover" />
+                    <img src={`${API_URL}${project.imageUrl}`} alt={project.title} className="w-full h-full object-cover" />
                   )}
                 </div>
                 <h3 className="font-bold text-lg mb-2">{project.title}</h3>

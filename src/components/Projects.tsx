@@ -18,6 +18,10 @@ interface Project {
   liveUrl?: string;
 }
 
+interface ProjectsProps {
+  customProjects?: Project[];
+}
+
 interface ProjectData {
   _id: string;
   title: string;
@@ -71,20 +75,23 @@ const defaultProjects: Project[] = [
       },
     ];
   
-  const Projects = () => {
-    const [projects, setProjects] = useState<Project[]>(defaultProjects);
+  const Projects = ({ customProjects }: ProjectsProps) => {
+    const [projects, setProjects] = useState<Project[]>(customProjects || defaultProjects);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    const handleCopyLink = (url: string, id: string) => {
-      navigator.clipboard.writeText(url);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    };
+  const handleCopyLink = (url: string, id: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   useEffect(() => {
+    if (customProjects) return; // Don't fetch if custom projects are provided
+
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const fetchProjects = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/projects');
+        const res = await fetch(`${API_URL}/api/projects`);
         const data = await res.json();
         
         const mappedProjects = data.map((p: ProjectData) => ({
@@ -93,7 +100,7 @@ const defaultProjects: Project[] = [
           description: p.description,
           tags: p.tags,
           icon: Layout, // Default icon for dynamic projects
-          image: `http://localhost:5000${p.imageUrl}`,
+          image: p.imageUrl.startsWith('http') ? p.imageUrl : `${API_URL}${p.imageUrl}`,
           color: "from-gray-500/20 to-gray-600/10",
           borderColor: "hover:border-gray-500/30",
           githubUrl: p.githubUrl,
@@ -107,7 +114,7 @@ const defaultProjects: Project[] = [
     };
 
     fetchProjects();
-  }, []);
+  }, [customProjects]);
 
   const otherProjects = [
     "Portfolio Website",
